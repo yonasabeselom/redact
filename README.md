@@ -27,6 +27,46 @@ Unlike standard consumer-grade utilities that merely clear surface-level browser
 
 ---
 
+## Deep Forensic Sanitization Matrix (218 Target Items)
+
+REDACT operates across modular tiers to completely sever forensic execution signatures, tracking logs, and physical storage residues.
+
+### Low Sensitivity (Items 1–60)
+*Targets temporary system environments, local graphics pipelines, user-level caches, and basic application debris.*
+
+* **Core System Temp Sectors:** `C:\Windows\Temp\*`, `%TEMP%\*`, and legacy extraction staging pools (`C:\*.tmp`).
+* **Shell & UI Caches:** Explorer Thumbnail Cache (`thumbcache_*.db`), Icon Cache (`iconcache_*.db`), and Photo import staging tracks.
+* **Diagnostic & Update Logs:** System Log Files (`C:\Windows\Logs\*`), Windows Error Reporting (`ReportQueue`), Delivery Optimization P2P network caches, and old Windows Update remnants (`SoftwareDistribution\Download`).
+* **Application History MRUs:** Native application tracking arrays including Notepad (Windows 11 LocalState packages), MS Paint, WordPad, and Windows Media Player recent file lists.
+* **Hardware & Driver Buffers:** DirectX Shader Cache (`D3DSCache`), Bluetooth telemetry state diagnostics, Print Spooler operational queues, and localized biometric sensor databases.
+
+---
+
+### Medium Sensitivity (Items 61–130)
+*Targets application execution paths, automated web browser caches, development build environments, and communications infrastructure.*
+
+* **Shell Navigation Trails:** File Explorer Quick Access Recent Files, taskbar Jump Lists, Run Dialog History (`Win+R`), and Address Bar explicitly typed folder paths.
+* **System Logging Facilities:** Full clearance of core Windows Event Logs via `wevtutil` (Application, Security, System, Setup, and PowerShell Operational logs).
+* **Browser Operational Caches:** Temporary cache trees, code caches, and transient session cookies across Google Chrome, Mozilla Firefox, Microsoft Edge, and Brave.
+* **Development Workspace History:** VS Code workspace storage histories, Python Pip package caches, Node.js npm global staging pools, Go Language build cache nodes, and Android Studio/Unity Editor recent project lists.
+* **Collaboration & Media Footprints:** Microsoft Teams, Zoom, Discord, Slack, and Skype system runtime caches, alongside VLC Player subtitle and recently parsed media histories.
+
+---
+
+### High Sensitivity (Items 131–218)
+*Targets low-level operating system forensic artifacts, user identity structures, cryptographic security tokens, and physical filesystem change journals.*
+
+* **Identity & Credential Databases:** Cryptographic vault tables from Windows Credential Manager, raw saved passwords, history files, and automated billing/autofill data across all primary chromium and gecko browsers.
+* **Forensic Execution Registries:** Complete removal of `UserAssist` execution keys, deep system `ShellBags` (`BagMRU` matrices mapping every folder ever opened), `MountPoints2` (archived external hardware/USB history), and kernel-level program execution signatures.
+* **The "Big Three" Forensic Monoliths:** 
+  * **AmCache Hive:** The primary forensic repository tracking application installations and historical execution pathways (`Amcache.hve`).
+  * **AppCompatCache (Shimcache):** Executive control structure tracking timestamps and execution contexts of every binary loaded by the OS.
+  * **Background Activity Monitor (BAM):** Kernel-level service documenting real-time active execution frequencies and system interactions.
+* **Filesystem & Snapshot Journals:** Cryptographic purging of the NTFS Change Journal (`$UsnJrnl`), structural filesystem transaction logs (`$LogFile`), transactional resource layers (`$Txf`), and full erasure of system snapshot restoration frames (Volume Shadow Copies / VSS).
+* **Volatile Memory & Storage Contexts:** Complete system configuration triggers for Page File Zero-on-Shutdown parameters, full execution disabling/purging of the core Hibernation RAM dump (`hiberfil.sys`), Windows Core Activity Store (`ActivitiesCache.db`), and local hardware device class unique signature identifiers.
+
+---
+
 ## Target Audience and Use Cases
 
 * Security Professionals and Penetration Testers: Ideal for clearing digital footprints on authorized machines or evaluating whether forensic logging mechanisms can be successfully neutralized during post-incident recovery assessments.
