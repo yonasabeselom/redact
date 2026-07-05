@@ -1,5 +1,9 @@
 # REDACT v1.0
 
+<p align="center">
+  <img src="logo.png" alt="REDACT Logo" width="200" height="200">
+</p>
+
 Platform: Windows 11
 Language: Python
 License: MIT
