@@ -11,6 +11,14 @@ Standard cleaning utilities operate on surface-level user directories. REDACT 3 
 
 Built with a **Windows 11 Fluent Dark UI**, it presents all 250 targets in a clean, toggle-driven dashboard that gives you full control over exactly what gets wiped.
 
+> Unlike CCleaner or BleachBit, REDACT 3 targets the forensic-layer artifacts those tools never reach — ShimCache, AmCache, BAM, NTFS journals, and Windows Recall.
+
+---
+
+## Screenshot
+
+![REDACT 3](screenshot.png)
+
 ---
 
 ## Who is this for?
