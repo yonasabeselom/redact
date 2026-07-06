@@ -1,98 +1,59 @@
-# REDACT v1.0
+# REDACT 3
 
-<p align="center">
-  <img src="logo.png" alt="REDACT Logo" width="200" height="200">
-</p>
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Platform: Windows 10 / 11](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-black.svg)]()
+[![Architecture: 64--bit](https://img.shields.io/badge/Architecture-64--bit-critical.svg)]()
 
-Platform: Windows 11
-Language: Python
-License: MIT
+**REDACT 3** is an advanced, forensic-grade system artifact sanitization engine engineered for absolute data destruction and system baseline hygiene. Standard cleaning utilities operate superficially on user-accessible directory layers. REDACT 3 operates at the kernel-user space boundary, interacting directly with low-level system forensic markers, restricted registry hives, filesystem transition journals, and volatile memory allocations.
 
-REDACT is an advanced forensic privacy eraser and system artifact sanitization utility designed for power users, system administrators, and cybersecurity professionals who require the absolute destruction of tracking data. 
-
-Unlike standard consumer-grade utilities that merely clear surface-level browser caches or unallocated temporary directories, REDACT targets, overwrites, and permanently purges deep operating system tracking matrices, application footprints, and critical forensic log hives across 218 distinct parameters.
+Designed with a high-end, futuristic **Windows 11 Fluent Dark UI**, it balances extreme data-erasure capabilities with an elegant, scannable, toggle-driven dashboard.
 
 ---
 
-## Key Features
+## ⚡ KEY HARDENING FEATURES (ANTI-FORENSIC BASELINE)
 
-* 218 Deep Targets Matrix: Exhaustive automated sweeping across low, medium, and high-sensitivity system sectors that standard tools miss.
-* 4 Cryptographic Wipe Standards: Integrated support for 1-Pass NVMe block clearing, NIST 800-88, 7-Pass Secure DoD, and 35-Pass Maximum Gutmann overwriting algorithms.
-* Solid-State Drive Optimization: Leverages native PowerShell ReTrim calls to trigger controller-level block clearing, safely optimizing sanitization for SSD and NVMe media without degrading hardware lifespans.
-* Forensic Ghost Trail Neutralization: Severs deep registry tracking keys including AmCache, BAM Background Activity Monitor, and ShimCache to wipe application execution history.
-* Filesystem Transaction Cleansing: Wipes volatile NTFS Change Journals and filesystem transaction logs to permanently prevent filename and metadata recovery.
-* Detailed Forensic Audit Logs: Generates a clean, transparent execution report exported directly to your Desktop upon completion, documenting every file purged and registry key severed.
-* Asynchronous Multi-Threaded Processing: Runs the entire wiping engine on an isolated background thread, ensuring a smooth user experience with zero application lockups or interface freezing.
-* Modern Windows 11 Visual Layout: Features a lightweight, completely transparent, custom-animated Fluent Dark theme.
+REDACT 3 implements dedicated architectural countermeasures engineered to safeguard memory state integrity and disrupt live physical triage harvesting strings:
 
----
-
-## Deep Forensic Sanitization Matrix (218 Target Items)
-
-REDACT operates across modular tiers to completely sever forensic execution signatures, tracking logs, and physical storage residues.
-
-### Low Sensitivity (Items 1–60)
-*Targets temporary system environments, local graphics pipelines, user-level caches, and basic application debris.*
-
-* **Core System Temp Sectors:** `C:\Windows\Temp\*`, `%TEMP%\*`, and legacy extraction staging pools (`C:\*.tmp`).
-* **Shell & UI Caches:** Explorer Thumbnail Cache (`thumbcache_*.db`), Icon Cache (`iconcache_*.db`), and Photo import staging tracks.
-* **Diagnostic & Update Logs:** System Log Files (`C:\Windows\Logs\*`), Windows Error Reporting (`ReportQueue`), Delivery Optimization P2P network caches, and old Windows Update remnants (`SoftwareDistribution\Download`).
-* **Application History MRUs:** Native application tracking arrays including Notepad (Windows 11 LocalState packages), MS Paint, WordPad, and Windows Media Player recent file lists.
-* **Hardware & Driver Buffers:** DirectX Shader Cache (`D3DSCache`), Bluetooth telemetry state diagnostics, Print Spooler operational queues, and localized biometric sensor databases.
+*   **Transient Execution Splitting (Memory Obfuscation):** On initialization, the binary automatically clones its execution thread into an isolated, randomized transient process context inside secure temporary staging paths. This splits the execution chain from static application names, cleanly bypassing endpoint logging frameworks (**Prefetch, BAM, and AmCache**).
+*   **Zero-Footprint Volatile Flow:** The tool operates entirely on an in-memory execution loop. It does not write local log files, debugging reports, or secondary text tracks to local storage.
+*   **Blind Memory Security:** Plaintext path strings are explicitly prohibited from surviving execution scopes or compiling into an unmanaged text roadmap. Real-time stats are tracked strictly via transient integer tokens, neutralizing the risk of string carving from a live physical RAM dump.
+*   **NTFS Cliff Protection (Sequential Overwrite Padding):** To mask sudden deletion transaction drops in the NTFS master tables, the engine automatically injects a controlled cluster burst of dummy transactions post-clean, blending deletion activity seamlessly into ambient OS storage traffic.
+*   **Registry Parent Key Modification Forcing:** REDACT 3 forces structural parameter rotations over parent registry key containers, causing hidden `LastWrite` timestamps to roll over and obscuring the timeline of deleted sub-keys.
 
 ---
 
-### Medium Sensitivity (Items 61–130)
-*Targets application execution paths, automated web browser caches, development build environments, and communications infrastructure.*
+## 🛠️ THE 250 DISCRETE TARGET TOOL MATRIX
 
-* **Shell Navigation Trails:** File Explorer Quick Access Recent Files, taskbar Jump Lists, Run Dialog History (`Win+R`), and Address Bar explicitly typed folder paths.
-* **System Logging Facilities:** Full clearance of core Windows Event Logs via `wevtutil` (Application, Security, System, Setup, and PowerShell Operational logs).
-* **Browser Operational Caches:** Temporary cache trees, code caches, and transient session cookies across Google Chrome, Mozilla Firefox, Microsoft Edge, and Brave.
-* **Development Workspace History:** VS Code workspace storage histories, Python Pip package caches, Node.js npm global staging pools, Go Language build cache nodes, and Android Studio/Unity Editor recent project lists.
-* **Collaboration & Media Footprints:** Microsoft Teams, Zoom, Discord, Slack, and Skype system runtime caches, alongside VLC Player subtitle and recently parsed media histories.
+The engine processes exactly **250 highly specialized system target nodes** distributed across three operational severity bands:
 
----
+### Tier 1: Low Sensitivity (60 Items)
+*Cache sweeps, temporary environment normalization, and transient layout debris.*
+*   **Volatile Windows Temp Channels:** Sweeps all system-wide `C:\Windows\Temp\*` and individual user `%TEMP%\*` staging directories.
+*   **Shell Previews & Graphic Buffers:** Obliterates thumbnail databases (`thumbcache_*.db`) and custom icon arrangement layouts (`iconcache_*.db`).
+*   **Diagnostics & Hotfix Leftovers:** Purges Windows Error Reporting queues (`WER\ReportQueue`), analytical telemetry staging, and staged update payload pools (`SoftwareDistribution\Download`).
 
-### High Sensitivity (Items 131–218)
-*Targets low-level operating system forensic artifacts, user identity structures, cryptographic security tokens, and physical filesystem change journals.*
+### Tier 2: Medium Sensitivity (70 Items)
+*Application tracking lifecycles, active development staging pools, and full browser operations tracking profiles.*
+*   **Shell Activity Ledgers:** Clears address bar typing histories, recently opened folders, and taskbar right-click jump lists (`AutomaticDestinations`).
+*   **Administrative Instrumentation Logs:** Invokes automated high-privilege parameters to fully drop Windows Event Logs via `wevtutil` (Application, System, Security, Setup, and PowerShell Operational streams).
+*   **Developer Workspace States:** Erases multi-tab recovery schemas, package buffers, and workspace tracking profiles inside VS Code, npm, Pip, Go, Unity, Blender, and Android Studio.
+*   **The 10-Browser Web Matrix:** Securely purges cache repositories, indexed databases, site permissions, and tracking cookies across ten sovereign browser environments: Google Chrome, Microsoft Edge, Mozilla Firefox, Brave, Comet AI, Vivaldi, Arc, Zen, Pale Moon, and Tor Browser.
 
-* **Identity & Credential Databases:** Cryptographic vault tables from Windows Credential Manager, raw saved passwords, history files, and automated billing/autofill data across all primary chromium and gecko browsers.
-* **Forensic Execution Registries:** Complete removal of `UserAssist` execution keys, deep system `ShellBags` (`BagMRU` matrices mapping every folder ever opened), `MountPoints2` (archived external hardware/USB history), and kernel-level program execution signatures.
-* **The "Big Three" Forensic Monoliths:** 
-  * **AmCache Hive:** The primary forensic repository tracking application installations and historical execution pathways (`Amcache.hve`).
-  * **AppCompatCache (Shimcache):** Executive control structure tracking timestamps and execution contexts of every binary loaded by the OS.
-  * **Background Activity Monitor (BAM):** Kernel-level service documenting real-time active execution frequencies and system interactions.
-* **Filesystem & Snapshot Journals:** Cryptographic purging of the NTFS Change Journal (`$UsnJrnl`), structural filesystem transaction logs (`$LogFile`), transactional resource layers (`$Txf`), and full erasure of system snapshot restoration frames (Volume Shadow Copies / VSS).
-* **Volatile Memory & Storage Contexts:** Complete system configuration triggers for Page File Zero-on-Shutdown parameters, full execution disabling/purging of the core Hibernation RAM dump (`hiberfil.sys`), Windows Core Activity Store (`ActivitiesCache.db`), and local hardware device class unique signature identifiers.
-
----
-
-## Target Audience and Use Cases
-
-* Security Professionals and Penetration Testers: Ideal for clearing digital footprints on authorized machines or evaluating whether forensic logging mechanisms can be successfully neutralized during post-incident recovery assessments.
-* System Administrators: Efficiently sanitizes corporate workstations before transitioning hardware between employees, ensuring no residual telemetry, application history, or deep log data remains.
-* Advanced Power Users: Tailored for privacy-conscious individuals demanding total authority over their local tracking data with a zero-external-telemetry standalone framework.
+### Tier 3: High Sensitivity (120 Items)
+*Structural operating system database monoliths, cryptographic authentication vaults, and filesystem master transaction journals.*
+*   **The Big Three Forensics Monoliths:** Neutralizes the ultimate execution trackers: the **AmCache Hive** (`Amcache.hve`), the **AppCompatCache** (`Shimcache`), and the **Background Activity Monitor (BAM)**.
+*   **Filesystem Structural Journals:** Truncates and deletes the NTFS Change Journal (`$UsnJrnl`), master filesystem transition tables (`$LogFile`), and transactional resource management streams (`$Txf`) to break deleted filename carving loops.
+*   **Exotic Hardware History Matrices:** Targets low-level registry nodes to wipe all identifying vendor strings, model configurations, and first/last connectivity tracking lines for attached storage letters (`MountedDevices`) and USB peripherals (`USBSTOR`).
+*   **AI Timeline Capture Pools:** Destroys local semantic database nodes and continuously captured image snapshot clusters mapping active terminal layouts inside the native **Windows Recall (CoreAI)** architecture.
+*   **Shadow Frame Snapshots:** Programmatically purges and terminates all volume recovery states and system backup boundaries (Volume Shadow Copies / VSS) across all online physical hard drives.
 
 ---
 
-## Installation and Usage
+## 🚀 COMPILATION & INSTALLATION
 
-REDACT operates entirely as a zero-footprint standalone local utility with zero external installation metadata or background phone-home routines.
+REDACT 3 is built entirely in pure Python using native Win32 API hooks to remain highly lightweight, independent, and free of external runtime dependencies. 
 
-### Prerequisites
-* Windows 11 64-bit
-* Administrator privileges Required to access locked registry structures and system logs
+To package the tool into a clean, zero-dependency standalone binary executable embedded with your custom application icon, execute the following PyInstaller directive from an elevated command terminal:
 
-### Running the Utility
-1. Download the latest compiled executable from the official project page or run the core script natively.
-2. Launch the application. 
-3. Accept the User Account Control UAC elevation prompt to grant administrative permissions.
-4. Select your desired sensitivity tier, toggle parameters, and execute the sanitization matrix.
-
----
-
-## License and Legal
-
-Distributed under the MIT License. See LICENSE for more information.
-
-Disclaimer: This software is an advanced anti-forensic system modifier. It is designed to safely purge telemetry and system metadata while leaving your core operating system and personal files intact. However, because it alters low-level registry keys and volatile system logs, it should be used at your own discretion. The developers assume no liability for unintended data loss.
+```bash
+pyinstaller --onefile --windowed --uac-admin --icon=logo.ico REDACT.py
