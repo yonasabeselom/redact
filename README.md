@@ -10,7 +10,7 @@ Designed with a high-end, futuristic **Windows 11 Fluent Dark UI**, it balances 
 
 ---
 
-## ⚡ KEY HARDENING FEATURES (ANTI-FORENSIC BASELINE)
+##  KEY HARDENING FEATURES (ANTI-FORENSIC BASELINE)
 
 REDACT 3 implements dedicated architectural countermeasures engineered to safeguard memory state integrity and disrupt live physical triage harvesting strings:
 
@@ -22,7 +22,7 @@ REDACT 3 implements dedicated architectural countermeasures engineered to safegu
 
 ---
 
-## 🛠️ THE 250 DISCRETE TARGET TOOL MATRIX
+##  THE 250 DISCRETE TARGET TOOL MATRIX
 
 The engine processes exactly **250 highly specialized system target nodes** distributed across three operational severity bands:
 
@@ -49,7 +49,7 @@ The engine processes exactly **250 highly specialized system target nodes** dist
 
 ---
 
-## 🚀 COMPILATION & INSTALLATION
+##  COMPILATION & INSTALLATION
 
 REDACT 3 is built entirely in pure Python using native Win32 API hooks to remain highly lightweight, independent, and free of external runtime dependencies. 
 
