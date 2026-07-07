@@ -69,7 +69,7 @@ Safe ephemeral caches that Windows rebuilds automatically. Zero functional impac
 - Windows Error Reports, update leftovers, Delivery Optimization cache
 - Diagnostic logs, telemetry staging, speech model caches, and more
 
-### 🟡 Tier 2 — Medium Sensitivity (70 items)
+### 🟡 Tier 2 — Medium Sensitivity (69 items)
 Application history, browser caches, and usage records. May reset UI preferences in affected apps.
 
 - File Explorer recent files, jump lists, Run dialog history, clipboard history
@@ -78,7 +78,7 @@ Application history, browser caches, and usage records. May reset UI preferences
 - App histories for Teams, Discord, Zoom, Steam, Spotify, VS Code, Blender, Unity, and more
 - Developer tool caches: npm, pip, Go build cache, Android Studio, Sublime Text
 
-### 🔴 Tier 3 — High Sensitivity (120 items)
+### 🔴 Tier 3 — High Sensitivity (121 items)
 Primary forensic artifacts and OS-level databases. Review each item before selecting.
 
 | Target | What it exposes |
