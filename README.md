@@ -1,17 +1,23 @@
-# REDACT 3
+<p align="center">
+  <img src="logo.png" width="180"/>
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Platform: Windows 10 / 11](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-black.svg)]()
-[![Architecture: 64-bit](https://img.shields.io/badge/Architecture-64--bit-critical.svg)]()
-[![Python: 3.9+](https://img.shields.io/badge/Python-3.9%2B-yellow.svg)]()
+<h1 align="center">REDACT 3</h1>
 
-**REDACT 3** is an open-source, forensic-grade Windows privacy tool that locates and cryptographically destroys the system artifacts, tracking databases, and application footprints that Windows silently accumulates during ordinary use — data that persists long after a user believes it has been deleted.
+<p align="center">
+  <i>ERASE EVERYTHING. LEAVE NOTHING.</i>
+</p>
 
-Standard cleaning utilities operate on surface-level user directories. REDACT 3 goes deeper, targeting low-level system forensic markers, restricted registry hives, filesystem journals, browser credential stores, and OS telemetry databases that most cleaners never touch.
+<p align="center">
+  <b>250 targets · 3 tiers · 4 wipe standards · 10 browsers · Windows 11</b>
+</p>
 
-Built with a **Windows 11 Fluent Dark UI**, it presents all 250 targets in a clean, toggle-driven dashboard that gives you full control over exactly what gets wiped.
-
-> Unlike CCleaner or BleachBit, REDACT 3 targets the forensic-layer artifacts those tools never reach — ShimCache, AmCache, BAM, NTFS journals, and Windows Recall.
+<p align="center">
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg"/></a>
+  <img src="https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-black.svg"/>
+  <img src="https://img.shields.io/badge/Architecture-64--bit-critical.svg"/>
+  <img src="https://img.shields.io/badge/Python-3.9%2B-yellow.svg"/>
+</p>
 
 ---
 
