@@ -20,6 +20,22 @@
   <a href="https://sourceforge.net/projects/redact/"><img src="https://img.shields.io/badge/SourceForge-redact-orange?logo=sourceforge"/></a>
 </p>
 
+<p align="center">
+  <b>Author:</b> Yonas Abeselom &nbsp;|&nbsp; <a href="mailto:yonas_abeselom@protonmail.com">yonas_abeselom@protonmail.com</a> &nbsp;|&nbsp; <a href="https://github.com/yonasabeselom">github.com/yonasabeselom</a>
+</p>
+
+<p align="center">
+  <b>⭐ If REDACT is useful to you, please star this repository — it helps other privacy-conscious users find it.</b>
+</p>
+
+---
+
+## Download
+
+📦 **[Download standalone .exe on SourceForge](https://sourceforge.net/projects/redact/)** — no Python installation required. Runs on any Windows 10 or 11 (64-bit) machine as Administrator.
+
+Or run directly from source — see [Installation & Usage](#installation--usage) below.
+
 ---
 
 ## Screenshot
@@ -130,6 +146,25 @@ No pip packages are required to run the script itself — only PyInstaller is ne
 
 ---
 
+## Why REDACT vs Other Tools
+
+| Feature | REDACT 3 | CCleaner | BleachBit |
+|---|---|---|---|
+| **Open source** | ✅ GPL v3 | ❌ Proprietary | ✅ GPL |
+| **Forensic artifact targets** | ✅ 250 (AmCache, BAM, ShimCache, SRUM…) | ❌ Basic only | ⚠️ Limited |
+| **Windows Recall / CoreAI** | ✅ | ❌ | ❌ |
+| **Registry LastWrite spoofing** | ✅ | ❌ | ❌ |
+| **NTFS File Cliff Masking** | ✅ | ❌ | ❌ |
+| **Transient Execution Splitting** | ✅ | ❌ | ❌ |
+| **4 cryptographic wipe standards** | ✅ | ❌ | ⚠️ Basic |
+| **10-browser coverage** | ✅ | ⚠️ Partial | ⚠️ Partial |
+| **No telemetry / phoning home** | ✅ | ❌ (Free tier) | ✅ |
+| **No external dependencies** | ✅ | N/A | N/A |
+
+REDACT 3 is the only open-source Windows privacy tool built specifically to defeat forensic analysis — not just free up disk space.
+
+---
+
 ## Wipe Standards
 
 | Mode | Passes | Description |
@@ -140,6 +175,48 @@ No pip packages are required to run the script itself — only PyInstaller is ne
 | **35-Pass Gutmann** | 35 | 9 fixed-pattern passes + 26 CSPRNG passes. Maximum destruction. |
 
 > Note: On NVMe/SSD drives, wear-levelling means multi-pass file wiping is not guaranteed to reach original physical cells. For solid-state media, the 1-Pass + TRIM method combined with full-drive encryption is the most reliable approach.
+
+---
+
+## Companion Tool — AAD-50
+
+REDACT 3 handles **OS-level** privacy cleaning — files, caches, registry traces, browser history, forensic artefacts.
+
+For **firmware-level NVMe drive sanitization** — full physical destruction of all NAND cells including over-provisioned zones, FTL mapping, and cryptographic keys — see the companion tool:
+
+🔒 **[AAD-50 — Abeselom ASIC-Direct 50](https://github.com/yonasabeselom/aad50)** — 50-cycle, hardware-confirmed NVMe sanitization with SHA-256 audit chain and PDF Certificate of Destruction.
+
+> Together, REDACT 3 + AAD-50 cover the full stack — from the Windows registry down to the raw NAND cells.
+
+---
+
+## Changelog
+
+### v3 — July 2026
+
+- Complete rewrite to zero-footprint architecture
+- **250 sanitization targets** across 3 sensitivity tiers — up from previous versions
+- **Windows 11 Fluent Dark UI** — per-item toggle switches across tier-grouped cards
+- **Windows Recall / CoreAI** destruction added — AI screenshot store and semantic timeline database
+- **Transient Execution Splitting** — process clones to randomised temp name on launch
+- **NTFS File Cliff Masking** — dummy file cluster written and deleted after each wipe batch
+- **Registry LastWrite Spoofing** — decoy value rolls parent key timestamp forward before deletion
+- **4 wipe standards** — 1-Pass Quick, NIST 800-88, 7-Pass DoD, 35-Pass Gutmann
+- **10-browser coverage** — Chrome, Edge, Firefox, Brave, Vivaldi, Arc, Zen, Pale Moon, Tor, Comet
+- **Safe Selection preset** — one-click enables all non-irreversible items
+- **Real-time monitor** — live file count and bytes freed during cleaning
+- **Auto-UAC elevation** — no manual right-click required
+- **No external dependencies** — pure Python standard library
+
+---
+
+## Contributing
+
+Bug reports, target suggestions, and pull requests are welcome.
+
+- **Bug reports:** Open a [GitHub Issue](https://github.com/yonasabeselom/redact/issues) with your Windows version, Python version, and the full error output.
+- **New targets:** If you know of a forensic artefact not currently covered, open an issue describing the registry path or file location.
+- **Contact:** [yonas_abeselom@protonmail.com](mailto:yonas_abeselom@protonmail.com)
 
 ---
 
