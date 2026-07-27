@@ -184,7 +184,7 @@ REDACT 3 handles **OS-level** privacy cleaning — files, caches, registry trace
 
 For **firmware-level NVMe drive sanitization** — full physical destruction of all NAND cells including over-provisioned zones, FTL mapping, and cryptographic keys — see the companion tool:
 
-🔒 **[AAD-50 — Abeselom ASIC-Direct 50](https://github.com/yonasabeselom/aad50)** — 50-cycle, hardware-confirmed NVMe sanitization with SHA-256 audit chain and PDF Certificate of Destruction.
+🔒 **[AAD-50 — Abeselom ASIC-Direct 50](https://github.com/yonasabeselom/aad50)** — 50-cycle, hardware-confirmed NVMe sanitization with SHA-256 audit chain and PDF Certificate of Destruction. Adopted into linux-nvme/nvme-cli master in 14 days. Confirmed by NVM Express Administration as recommended best practice.
 
 > Together, REDACT 3 + AAD-50 cover the full stack — from the Windows registry down to the raw NAND cells.
 
