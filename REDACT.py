@@ -43,27 +43,38 @@ def _fmt_size(b):
     if b < 1024**3:         return f"{b/1024**2:.2f} MB"
     return                         f"{b/1024**3:.3f} GB"
 
-def _nvme_passes(size):
-    p = [b"\x00" * size, b"\xFF" * size, b"\xAA" * size, b"\x55" * size]
-    p.append((b"\xAA\x55" * (size // 2 + 1))[:size])
-    p.append((b"\x55\xAA" * (size // 2 + 1))[:size])
-    p.append((b"\x92\x49\x24" * (size // 3 + 1))[:size])
-    p.append((b"\x49\x24\x92" * (size // 3 + 1))[:size])
-    p.append((b"\x24\x92\x49" * (size // 3 + 1))[:size])
-    for _ in range(26):
-        p.append(secrets.token_bytes(size))
-    return p
+# Pass pattern definitions — each entry is a fixed byte pattern (to repeat)
+# or None (random). Written in 4 MB chunks to avoid loading the whole file
+# into memory for every pass — fixes memory exhaustion on large files.
+_NVME_PATTERNS  = [b"\x00", b"\xFF", b"\xAA", b"\x55",
+                   b"\xAA\x55", b"\x55\xAA",
+                   b"\x92\x49\x24", b"\x49\x24\x92", b"\x24\x92\x49"] \
+                  + [None] * 26
+_DOD7_PATTERNS  = [b"\x00", b"\xFF", None, b"\xAA", None, b"\x00", None]
+_NIST_PATTERNS  = [b"\x35", b"\xCA", None]
+_SINGLE_PATTERN = [None]
 
-def _dod7_passes(size):
-    return [b"\x00"*size, b"\xFF"*size, secrets.token_bytes(size),
-            b"\xAA"*size, secrets.token_bytes(size), b"\x00"*size,
-            secrets.token_bytes(size)]
+_CHUNK = 4 * 1024 * 1024  # 4 MB write chunk
 
-def _nist_passes(size):
-    return [b"\x35"*size, b"\xCA"*size, secrets.token_bytes(size)]
+def _write_pass(fh, size, pattern):
+    """Write one wipe pass in 4 MB chunks. pattern=None means random bytes."""
+    fh.seek(0)
+    written = 0
+    while written < size:
+        chunk_size = min(_CHUNK, size - written)
+        if pattern is None:
+            fh.write(secrets.token_bytes(chunk_size))
+        else:
+            block = (pattern * (chunk_size // len(pattern) + 1))[:chunk_size]
+            fh.write(block)
+        written += chunk_size
+    fh.flush()
+    os.fsync(fh.fileno())
 
-def _single_pass(size):
-    return [secrets.token_bytes(size)]
+def _nvme_passes(size):  return _NVME_PATTERNS
+def _dod7_passes(size):  return _DOD7_PATTERNS
+def _nist_passes(size):  return _NIST_PATTERNS
+def _single_pass(size):  return _SINGLE_PATTERN
 
 def _wipe_file(path):
     try:
@@ -74,11 +85,11 @@ def _wipe_file(path):
             STATS.files += 1
             return
         
-        passes = {"single":_single_pass,"nist":_nist_passes,"secure":_dod7_passes,"gutmann":_nvme_passes}[WIPE_MODE_KEY](size)
-        
+        patterns = {"single":_single_pass,"nist":_nist_passes,"secure":_dod7_passes,"gutmann":_nvme_passes}[WIPE_MODE_KEY](size)
+
         with open(path, "r+b") as fh:
-            for data in passes:
-                fh.seek(0); fh.write(data); fh.flush(); os.fsync(fh.fileno())
+            for pattern in patterns:
+                _write_pass(fh, size, pattern)
             fh.seek(0); fh.truncate(0); fh.flush(); os.fsync(fh.fileno())
         os.remove(path)
         STATS.files += 1
@@ -144,8 +155,9 @@ def _reg(hive_str, path):
         if parent_path:
             try:
                 p_key = winreg.OpenKey(h, parent_path, 0, winreg.KEY_ALL_ACCESS)
-                winreg.SetValueEx(p_key, f"SysCache_{secrets.token_hex(2)}", 0, winreg.REG_DWORD, random.randint(1, 100))
-                winreg.DeleteValue(p_key, f"SysCache_{secrets.token_hex(2)}")
+                _decoy_name = f"SysCache_{secrets.token_hex(2)}"
+                winreg.SetValueEx(p_key, _decoy_name, 0, winreg.REG_DWORD, random.randint(1, 100))
+                winreg.DeleteValue(p_key, _decoy_name)
                 winreg.CloseKey(p_key)
             except Exception:
                 pass
