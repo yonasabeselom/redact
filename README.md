@@ -13,11 +13,18 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/yonasabeselom/redact/stargazers"><img src="https://img.shields.io/github/stars/yonasabeselom/redact?style=social" alt="GitHub Stars"/></a>
+  <a href="https://github.com/yonasabeselom/redact/network/members"><img src="https://img.shields.io/github/forks/yonasabeselom/redact?style=social" alt="GitHub Forks"/></a>
+  <a href="https://github.com/yonasabeselom/redact/watchers"><img src="https://img.shields.io/github/watchers/yonasabeselom/redact?style=social" alt="GitHub Watchers"/></a>
+</p>
+
+<p align="center">
   <a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg"/></a>
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-black.svg"/>
   <img src="https://img.shields.io/badge/Architecture-64--bit-critical.svg"/>
   <img src="https://img.shields.io/badge/Python-3.9%2B-yellow.svg"/>
   <a href="https://sourceforge.net/projects/redact/"><img src="https://img.shields.io/badge/SourceForge-redact-orange?logo=sourceforge"/></a>
+  <a href="https://github.com/yonasabeselom/redact/releases"><img src="https://img.shields.io/github/v/release/yonasabeselom/redact" alt="Latest Release"/></a>
 </p>
 
 <p align="center">
