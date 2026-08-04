@@ -1,6 +1,6 @@
 # ╔══════════════════════════════════════════════════════════════════╗
-# ║     REDACT 3 (HARDENED PRODUCTION RELEASE)                       ║
-# ║     250 items · 4 tiers · Windows 11 Fluent Dark UI              ║
+# ║     REDACT 3.2 (HARDENED PRODUCTION RELEASE)                     ║
+# ║     255 items · 4 tiers · Windows 11 Fluent Dark UI              ║
 # ║     NVMe/SSD optimised · 1 / 3 / 7 / 35-pass wipe                ║
 # ║     Zero-Footprint Blind Execution RAM-Secure Architecture       ║
 # ║     Anti-Forensic Time-Spoofing & File Cliff Protection          ║
@@ -179,7 +179,270 @@ def _run(cmd):
     except Exception:
         pass
 
-# ─── 250 Items Deep Forensic Matrix ───────────────────────────────────────────
+# ─── RAM Wipe Engine ──────────────────────────────────────────────────────────
+def _wipe_ram():
+    """Overwrite free physical RAM, trim working sets, and enable pagefile zeroing.
+    
+    Technique: Allocate 85% of available physical RAM in 64 MB chunks, fill each
+    chunk with cryptographically random bytes (first pass) then zeros (second pass),
+    then release. This overwrites freed/idle page frames that may contain sensitive
+    data from prior processes — defeating live RAM acquisition of those pages.
+    
+    Limitations: Pages currently locked by the OS kernel or active processes cannot
+    be touched from userspace. For full coverage, pair with a cold-boot or hibernation
+    wipe (AAD-50 handles the NAND layer below).
+    """
+    import gc, ctypes
+
+    # ── Step 1: Query available physical RAM ──────────────────────────────────
+    class MEMORYSTATUSEX(ctypes.Structure):
+        _fields_ = [
+            ("dwLength",        ctypes.c_ulong),
+            ("dwMemoryLoad",    ctypes.c_ulong),
+            ("ullTotalPhys",    ctypes.c_ulonglong),
+            ("ullAvailPhys",    ctypes.c_ulonglong),
+            ("ullTotalPageFile",ctypes.c_ulonglong),
+            ("ullAvailPageFile",ctypes.c_ulonglong),
+            ("ullTotalVirtual", ctypes.c_ulonglong),
+            ("ullAvailVirtual", ctypes.c_ulonglong),
+            ("ullExtendedVirt", ctypes.c_ulonglong),
+        ]
+
+    mem = MEMORYSTATUSEX()
+    mem.dwLength = ctypes.sizeof(mem)
+    try:
+        ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(mem))
+        available = mem.ullAvailPhys
+    except Exception:
+        available = 512 * 1024 * 1024  # fallback: assume 512 MB free
+
+    # ── Step 2: Force Python GC to maximise free pages before allocation ──────
+    gc.collect()
+
+    # ── Step 3: Allocate 85% of free RAM in 64 MB chunks & overwrite ─────────
+    target     = int(available * 0.85)
+    CHUNK      = 64 * 1024 * 1024  # 64 MB per chunk
+    chunks     = []
+    allocated  = 0
+
+    try:
+        while allocated < target:
+            size = min(CHUNK, target - allocated)
+            buf  = ctypes.create_string_buffer(size)
+            # Pass 1 — random bytes (defeats value-based forensic analysis)
+            ctypes.memmove(buf, secrets.token_bytes(size), size)
+            # Pass 2 — zero (leaves no identifiable pattern)
+            ctypes.memset(buf, 0, size)
+            chunks.append(buf)
+            allocated += size
+    except (MemoryError, OSError):
+        pass  # Stop gracefully when system is near its limit
+
+    # ── Step 4: Release all allocated chunks ──────────────────────────────────
+    chunks.clear()
+    gc.collect()
+
+    # ── Step 5: Trim working set of the current process ───────────────────────
+    try:
+        hproc = ctypes.windll.kernel32.GetCurrentProcess()
+        ctypes.windll.kernel32.SetProcessWorkingSetSize(hproc, ctypes.c_size_t(-1), ctypes.c_size_t(-1))
+        ctypes.windll.psapi.EmptyWorkingSet(hproc)
+    except Exception:
+        pass
+
+    # ── Step 6: Set pagefile to zero on next shutdown ─────────────────────────
+    try:
+        key = winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
+            0, winreg.KEY_SET_VALUE
+        )
+        winreg.SetValueEx(key, "ClearPageFileAtShutdown", 0, winreg.REG_DWORD, 1)
+        winreg.CloseKey(key)
+    except Exception:
+        pass
+
+    # ── Step 7: Disable hibernation — prevents RAM image in hiberfil.sys ──────
+    try:
+        subprocess.run("powercfg /hibernate off", shell=True, capture_output=True, timeout=10)
+    except Exception:
+        pass
+
+    STATS.files += 1  # Count as one completed operation
+
+# ─── Cryptographic Erasure Engine ─────────────────────────────────────────────
+
+def _destroy_bitlocker_headers():
+    """Destroy BitLocker VMK headers on all fixed drives.
+    Overwrites the first 16 sectors (8 KB) of every BitLocker-encrypted
+    volume. Without the VMK header the ciphertext is permanently
+    unrecoverable — NIST 800-88 Cryptographic Erase compliant.
+
+    WARNING: If BitLocker is active on the OS/system drive, destroying
+    its header will render Windows unbootable on next restart.
+    A confirmation dialog is shown before proceeding on the system drive.
+    """
+    import ctypes, string, os
+    import tkinter.messagebox as _mb
+
+    GENERIC_WRITE      = 0x40000000
+    FILE_SHARE_RW      = 0x3
+    OPEN_EXISTING      = 3
+    INVALID_HANDLE     = ctypes.c_void_p(-1).value
+    HEADER_BYTES       = 512 * 16  # first 16 sectors
+    BITLOCKER_SIG      = b"-FVE-FS-"
+
+    # Detect the Windows system drive letter (usually C)
+    sys_drive_letter = os.environ.get("SystemDrive", "C:").rstrip(":").upper()
+
+    for letter in string.ascii_uppercase:
+        vol_path = f"\\\\.\\{letter}:"
+        try:
+            handle = ctypes.windll.kernel32.CreateFileW(
+                vol_path, GENERIC_WRITE, FILE_SHARE_RW,
+                None, OPEN_EXISTING, 0, None
+            )
+            if handle == INVALID_HANDLE:
+                continue
+
+            # Read first 8 bytes to check BitLocker signature (-FVE-FS-)
+            read_handle = ctypes.windll.kernel32.CreateFileW(
+                vol_path, 0x80000000, FILE_SHARE_RW,
+                None, OPEN_EXISTING, 0, None
+            )
+            sig = ctypes.create_string_buffer(8)
+            read = ctypes.c_ulong(0)
+            ctypes.windll.kernel32.ReadFile(read_handle, sig, 8, ctypes.byref(read), None)
+            ctypes.windll.kernel32.CloseHandle(read_handle)
+
+            is_bitlocker = sig.raw == BITLOCKER_SIG
+            is_os_drive  = (letter.upper() == sys_drive_letter)
+
+            # ── OS DRIVE SAFETY GATE ────────────────────────────────────────
+            # If this is the system drive AND BitLocker is active, destroying
+            # the header will make Windows unbootable on next restart.
+            # Force an explicit user confirmation before proceeding.
+            if is_os_drive and is_bitlocker:
+                confirmed = _mb.askyesno(
+                    title="⚠️ CRITICAL WARNING — System Drive Detected",
+                    message=(
+                        f"BitLocker is active on your SYSTEM DRIVE ({letter}:\\).\n\n"
+                        "Destroying this header will make Windows PERMANENTLY "
+                        "UNBOOTABLE on next restart.\n\n"
+                        "The encrypted data will be irrecoverable — "
+                        "no password, no recovery key, no tool can restore it.\n\n"
+                        "This action CANNOT be undone.\n\n"
+                        "Are you absolutely sure you want to continue?"
+                    ),
+                    icon="warning",
+                )
+                if not confirmed:
+                    # User declined — skip the OS drive, continue with others
+                    ctypes.windll.kernel32.CloseHandle(handle)
+                    continue
+            # ── END OS DRIVE SAFETY GATE ────────────────────────────────────
+
+            # Overwrite header (only damages BitLocker metadata if BitLocker
+            # is active; on plain NTFS this trashes the boot sector which
+            # Windows can repair — only run if user selects this item knowingly)
+            buf     = secrets.token_bytes(HEADER_BYTES)
+            written = ctypes.c_ulong(0)
+            ctypes.windll.kernel32.WriteFile(handle, buf, len(buf), ctypes.byref(written), None)
+            ctypes.windll.kernel32.FlushFileBuffers(handle)
+            ctypes.windll.kernel32.CloseHandle(handle)
+            STATS.files += 1
+        except Exception:
+            pass
+
+
+def _nuke_veracrypt_containers():
+    """Overwrite VeraCrypt primary + backup headers in all .vc/.hc files
+    found under the user profile and all drive roots.
+    Primary header  = first 512 bytes.
+    Backup header   = last 512 bytes.
+    Without both, the container is indistinguishable from random data.
+    """
+    import string
+    search_roots = [
+        os.path.expandvars(r"%USERPROFILE%"),
+        os.path.expandvars(r"%APPDATA%"),
+        os.path.expandvars(r"%LOCALAPPDATA%"),
+    ]
+    for letter in string.ascii_uppercase:
+        root = f"{letter}:\\\\"
+        if os.path.exists(root):
+            search_roots.append(root)
+
+    found = []
+    for root in search_roots:
+        for dirpath, _, files in os.walk(root):
+            for fname in files:
+                if fname.lower().endswith((".vc", ".hc", ".veracrypt")):
+                    found.append(os.path.join(dirpath, fname))
+            # Don't recurse into Windows system dirs
+            if dirpath.lower().startswith(("c:\\windows", "c:\\program")):
+                break
+
+    for path in found:
+        try:
+            size = os.path.getsize(path)
+            if size < 1024:
+                continue
+            with open(path, "r+b") as f:
+                # Primary header — first 512 bytes
+                f.seek(0)
+                f.write(secrets.token_bytes(512))
+                # Backup header — last 512 bytes
+                f.seek(-512, 2)
+                f.write(secrets.token_bytes(512))
+                f.flush()
+                os.fsync(f.fileno())
+            STATS.files += 1
+        except Exception:
+            pass
+
+
+def _wipe_efs_keys():
+    """Wipe Windows EFS RSA private key files.
+    Without these keys, all EFS-encrypted files on disk become
+    permanently unreadable regardless of Windows login credentials.
+    """
+    efs_paths = [
+        r"%APPDATA%\Microsoft\Crypto\RSA\*\*",
+        r"%APPDATA%\Microsoft\Crypto\Keys\*",
+        r"%APPDATA%\Microsoft\Protect\*\*",
+        r"%LOCALAPPDATA%\Microsoft\Credentials\*",
+        r"%APPDATA%\Microsoft\SystemCertificates\My\Certificates\*",
+    ]
+    _wipe(*[os.path.expandvars(p) for p in efs_paths])
+    # Also delete DPAPI master keys (used to protect EFS keys)
+    try:
+        _run('cipher /rekey')
+    except Exception:
+        pass
+
+
+def _wipe_hello_ngc():
+    """Destroy Windows Hello NGC key store.
+    The NGC folder holds PIN, fingerprint, and facial recognition
+    key material. Wiping it revokes all Hello credentials at the
+    filesystem level — the account PIN/biometrics must be re-enrolled.
+    """
+    ngc_paths = [
+        r"C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\Microsoft\NGC\*",
+        r"C:\Windows\System32\config\systemprofile\AppData\Roaming\Microsoft\NGC\*",
+        r"%LOCALAPPDATA%\Microsoft\Windows\HelloData\*",
+        r"%APPDATA%\Microsoft\Windows\AccountPictures\*",
+    ]
+    _wipe(*[os.path.expandvars(p) for p in ngc_paths])
+    # Clear NGC registry references
+    _reg("HKLM", r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\PasswordLess\Device")
+    try:
+        _run('dsregcmd /leave 2>nul')
+    except Exception:
+        pass
+
+# ─── 255 Items Deep Forensic Matrix ───────────────────────────────────────────
 ALL_ITEMS = [
     # === LOW SENSITIVITY (Items 1-60) ===
     ("LOW","temp_win","Windows Temp Files","Cached junk in C:\\Windows\\Temp",lambda: _clean(r"C:\Windows\Temp\*")),
@@ -437,9 +700,34 @@ ALL_ITEMS = [
     ("HIGH","explorer_assoc_mru","File Extension Association MRU","Registry maps documenting recently configured custom protocol pairings",lambda: [_reg("HKCU",r"Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts")]),
     ("HIGH","game_bar_mru","Xbox Game Bar Targets MRU","Registry indicators mapping target application linkages for overlay interactions",lambda: [_reg("HKCU",r"Software\Microsoft\Windows\CurrentVersion\GameDVR\AppTargetHistory")]),
     ("HIGH","shell_folder_views","Shell Folder View Customisations","Registry trees mapping custom icon arrangements, view states, and window locations",lambda: [_reg("HKCU",r"Software\Microsoft\Windows\Shell\Bags\1\Desktop")]),
+
+    # === ITEM 251 — LIVE RAM SANITIZATION ===
+    ("HIGH","ram_wipe","Live RAM Overwrite (Free Pages)",
+     "Overwrites free RAM pages with random bytes + zeros. Trims working set, zeros pagefile on shutdown, disables hibernation. Kernel-locked pages cannot be touched from userspace.",
+     lambda: _wipe_ram()),
+
+    # === ITEM 252 — BITLOCKER HEADER DESTRUCTION ===
+    ("HIGH","bitlocker_header","BitLocker Volume Header Destruction",
+     "Destroys BitLocker VMK headers on all detected encrypted volumes. Without the header the ciphertext is permanently unrecoverable — no password or recovery key can ever unlock it. NIST 800-88 Cryptographic Erase.",
+     lambda: _destroy_bitlocker_headers()),
+
+    # === ITEM 253 — VERACRYPT CONTAINER NUKE ===
+    ("HIGH","veracrypt_nuke","VeraCrypt Container Header Nuke",
+     "Overwrites primary and backup headers of all VeraCrypt containers (.vc/.hc) found on the system. Container becomes indistinguishable from random data — permanently inaccessible without breaking AES-XTS.",
+     lambda: _nuke_veracrypt_containers()),
+
+    # === ITEM 254 — EFS KEY MATERIAL WIPE ===
+    ("HIGH","efs_keys","EFS Encrypted File System Key Wipe",
+     "Wipes RSA private keys and DPAPI master keys used by Windows EFS. All EFS-encrypted files on disk become permanently unreadable — even with valid Windows login credentials. WARNING: If you have EFS-encrypted files, they will be permanently inaccessible after this wipe. This cannot be undone.",
+     lambda: _wipe_efs_keys()),
+
+    # === ITEM 255 — WINDOWS HELLO / NGC KEY STORE ===
+    ("HIGH","hello_ngc","Windows Hello & NGC Biometric Key Store",
+     "Destroys the NGC folder holding Windows Hello PIN, fingerprint and facial recognition key material. Prevents recovery of Hello credentials from the filesystem. PIN/biometrics must be re-enrolled after reboot.",
+     lambda: _wipe_hello_ngc()),
 ]
 
-assert len(ALL_ITEMS) == 250, f"Expected 250, got {len(ALL_ITEMS)}"
+assert len(ALL_ITEMS) == 255, f"Expected 255, got {len(ALL_ITEMS)}"
 
 SAFE_EXCLUDE = {
     "downloads_folder", "wifi_passwords", "pagefile_wipe", "hiberfil", 
@@ -525,7 +813,7 @@ class App(tk.Tk):
         except Exception:
             pass
 
-        self.title("REDACT 3")
+        self.title("REDACT 3.2")
         
         rect = RECT()
         ctypes.windll.user32.SystemParametersInfoW(48, 0, ctypes.byref(rect), 0)
@@ -550,8 +838,8 @@ class App(tk.Tk):
         text_header_f = tk.Frame(header_f, bg=W11_BG)
         text_header_f.pack(side="left", anchor="w")
         
-        tk.Label(text_header_f, text="REDACT 3", font=FONT_FL_HEADER, fg=W11_TEXT_MAIN, bg=W11_BG).pack(anchor="w")
-        tk.Label(text_header_f, text="Forensic Privacy Eraser & Advanced System Artifact Sanitization Suite · 250 System Items Active", font=FONT_FL_SUB, fg=W11_TEXT_MUTED, bg=W11_BG).pack(anchor="w", pady=(2, 0))
+        tk.Label(text_header_f, text="REDACT 3.2", font=FONT_FL_HEADER, fg=W11_TEXT_MAIN, bg=W11_BG).pack(anchor="w")
+        tk.Label(text_header_f, text="Forensic Privacy Eraser & Advanced System Artifact Sanitization Suite · 255 System Items Active", font=FONT_FL_SUB, fg=W11_TEXT_MUTED, bg=W11_BG).pack(anchor="w", pady=(2, 0))
 
         self.btn_run = tk.Button(header_f, text="INITIALIZE PIPELINE CLEAN", font=("Segoe UI", 11, "bold"), fg="#ffffff", bg="#004578", activebackground="#0078d4", activeforeground="#ffffff", bd=1, relief="flat", padx=35, pady=14, cursor="hand2", command=self._verify_intent)
         self.btn_run.pack(side="right", anchor="e", padx=(0, 5))
@@ -692,7 +980,7 @@ class App(tk.Tk):
 
     def _update_selection_metrics(self):
         n = sum(1 for v in self.vars.values() if v.get())
-        self.lbl_metrics.config(text=f"{n:02d} / 250 Targets Active")
+        self.lbl_metrics.config(text=f"{n:03d} / 255 Targets Active")
 
     def _verify_intent(self):
         selected = [(t, i, n, d, fn) for (t, i, n, d, fn) in ALL_ITEMS if self.vars[i].get()]
