@@ -2,14 +2,14 @@
   <img src="logo.png" width="180"/>
 </p>
 
-<h1 align="center">REDACT 3.2</h1>
+<h1 align="center">REDACT 3.2.1</h1>
 
 <p align="center">
   <i>ERASE EVERYTHING. LEAVE NOTHING.</i>
 </p>
 
 <p align="center">
-  <b>255 targets · 3 tiers · 4 wipe standards · 10 browsers · Live RAM Wipe · Cryptographic Erasure · Windows 11</b>
+  <b>255 targets · 3 tiers · 4 wipe standards · 10 browsers · Live RAM Wipe · Cryptographic Erasure · BitLocker Safety Gate · Windows 11</b>
 </p>
 
 <p align="center">
@@ -163,9 +163,9 @@ Rather than decrypting volumes (which is slow, requires the key, and leaves plai
 
 | Item | Method | Effect |
 |---|---|---|
-| **BitLocker Header Destruction** | Overwrites first 16 sectors (8 KB) of every drive | VMK gone — ciphertext permanently unreadable. No password or recovery key can help. |
+| **BitLocker Header Destruction** | Overwrites first 16 sectors (8 KB) of every drive. OS drive safety gate added in v3.2.1 — shows critical warning before proceeding on the system drive. | VMK gone — ciphertext permanently unreadable. No password or recovery key can help. |
 | **VeraCrypt Container Nuke** | Overwrites first 512 bytes + last 512 bytes of all `.vc`/`.hc` files | Both headers destroyed — container is indistinguishable from random noise. |
-| **EFS Key Wipe** | Wipes `%APPDATA%\Microsoft\Crypto\RSA`, `Crypto\Keys`, `Protect` + runs `cipher /rekey` | EFS-encrypted files on disk become permanently unreadable, even with valid login. |
+| **EFS Key Wipe** | Wipes `%APPDATA%\Microsoft\Crypto\RSA`, `Crypto\Keys`, `Protect` + runs `cipher /rekey` | EFS-encrypted files on disk become permanently unreadable, even with valid login. ⚠️ If you have EFS-encrypted files, they will be permanently inaccessible. |
 | **Windows Hello / NGC** | Wipes NGC folder + HelloData + registry reference + `dsregcmd /leave` | Hello PIN, fingerprint, and face keys gone — must re-enroll after reboot. |
 
 ---
@@ -185,7 +185,7 @@ REDACT 3.2 will auto-elevate via UAC if the current session lacks Administrator 
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --uac-admin --icon=logo.ico REDACT.py
+pyinstaller --onefile --windowed --uac-admin --icon=logo.ico --name="REDACT 3.2.1" "REDACT 3.2.1.py"
 ```
 
 No pip packages are required to run the script itself — only PyInstaller is needed if you want to compile to `.exe`.
@@ -236,11 +236,17 @@ For **firmware-level NVMe drive sanitization** — full physical destruction of 
 
 🔒 **[AAD-50 — Abeselom ASIC-Direct 50](https://github.com/yonasabeselom/aad50)** — 50-cycle, hardware-confirmed NVMe sanitization with SHA-256 audit chain and PDF Certificate of Destruction. Adopted into linux-nvme/nvme-cli master in 14 days. Confirmed by NVM Express Administration as recommended best practice. Compliant with IEEE 2883.1-2025.
 
-> Together, **REDACT 3.2 + AAD-50** cover the complete forensic stack — from Windows registry and live RAM down to the raw NAND cells. No other open-source toolchain does both.
+> Together, **REDACT 3.2.1 + AAD-50** cover the complete forensic stack — from Windows registry and live RAM down to the raw NAND cells. No other open-source toolchain does both.
 
 ---
 
 ## Changelog
+
+### v3.2.1 — August 2026
+
+- **BitLocker OS Drive Safety Gate:** Before executing Item 252 (BitLocker Header Destruction), REDACT now detects whether the target volume is the Windows system drive. If BitLocker is active on the system drive, a blocking confirmation dialog halts execution and warns the user that proceeding will make Windows permanently unbootable. If the user declines, the system drive is skipped and all other volumes proceed normally. Secondary and external BitLocker volumes are unaffected.
+- **EFS Key Wipe — Warning Added:** Item 254 description now explicitly warns that EFS-encrypted files will become permanently inaccessible after this wipe. This cannot be undone.
+- **Window Title Fix:** Title bar now correctly displays REDACT 3.2 instead of REDACT 3.
 
 ### v3.2 — August 2026
 
@@ -278,7 +284,7 @@ Bug reports, target suggestions, and pull requests are welcome.
 
 ## ⚠️ Disclaimer
 
-REDACT 3.2 **permanently destroys data**. Wiped files cannot be recovered. Registry keys deleted by REDACT are gone. Volume Shadow Copies, once deleted, remove your ability to restore previous file versions. BitLocker and VeraCrypt header destruction renders encrypted volumes permanently inaccessible — there is no recovery path.
+REDACT 3.2.1 **permanently destroys data**. Wiped files cannot be recovered. Registry keys deleted by REDACT are gone. Volume Shadow Copies, once deleted, remove your ability to restore previous file versions. BitLocker and VeraCrypt header destruction renders encrypted volumes permanently inaccessible — there is no recovery path.
 
 Always ensure you have backups of anything you want to keep before running this tool. The author accepts no liability for data loss, system instability, or any other consequence arising from its use.
 
