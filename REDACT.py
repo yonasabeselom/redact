@@ -1,5 +1,5 @@
 # ╔══════════════════════════════════════════════════════════════════╗
-# ║     REDACT 3.2 (HARDENED PRODUCTION RELEASE)                     ║
+# ║     REDACT 3.3.0 (AUTO-TRIGGER RELEASE)                        ║
 # ║     255 items · 4 tiers · Windows 11 Fluent Dark UI              ║
 # ║     NVMe/SSD optimised · 1 / 3 / 7 / 35-pass wipe                ║
 # ║     Zero-Footprint Blind Execution RAM-Secure Architecture       ║
@@ -7,6 +7,7 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 
 import sys, os, ctypes, subprocess, shutil, glob, threading, secrets, random
+import time
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -443,6 +444,85 @@ def _wipe_hello_ngc():
         pass
 
 # ─── 255 Items Deep Forensic Matrix ───────────────────────────────────────────
+
+# === Auto-Trigger Engine (REDACT 3.3.0) ===
+
+# Each trigger has its own independent stop event (multi-trigger queue)
+_usb_stop   = threading.Event()
+_login_stop = threading.Event()
+_cd_stop    = threading.Event()
+
+def _get_removable_drives():
+    import string
+    drives = set()
+    bitmask = ctypes.windll.kernel32.GetLogicalDrives()
+    for i, letter in enumerate(string.ascii_uppercase):
+        if bitmask & (1 << i):
+            dtype = ctypes.windll.kernel32.GetDriveTypeW(letter + ":\\")
+            if dtype == 2:
+                drives.add(letter)
+    return drives
+
+def _get_recent_failed_logins():
+    try:
+        r = subprocess.run(
+            'wevtutil qe Security /q:"*[System[EventID=4625]]" /c:100 /rd:true /f:text',
+            shell=True, capture_output=True, text=True, timeout=10
+        )
+        return r.stdout.count("Event ID: 4625")
+    except Exception:
+        return 0
+
+def _fire_auto_wipe(reason, app_ref=None):
+    global WIPE_MODE_KEY
+    WIPE_MODE_KEY = "single"
+    STATS.reset()
+    for (t, _, _, _, fn) in ALL_ITEMS:
+        if t == "HIGH":
+            try:
+                fn()
+            except Exception:
+                pass
+    if app_ref:
+        msg = "REDACT Auto-Trigger fired.\nReason: " + str(reason) + "\n\nHigh-tier wipe completed silently."
+        try:
+            app_ref.after(0, lambda m=msg: messagebox.showwarning("AUTO-TRIGGER FIRED", m))
+        except Exception:
+            pass
+
+def _usb_trigger_monitor(baseline, app_ref):
+    while not _usb_stop.is_set():
+        removed = baseline - _get_removable_drives()
+        if removed:
+            _fire_auto_wipe("USB panic: Drive " + next(iter(removed)) + ": removed", app_ref)
+            break
+        time.sleep(1)
+
+def _login_failure_monitor(threshold, app_ref):
+    baseline = _get_recent_failed_logins()
+    while not _login_stop.is_set():
+        delta = _get_recent_failed_logins() - baseline
+        if delta >= threshold:
+            _fire_auto_wipe("Login failure: " + str(delta) + " failed attempts", app_ref)
+            break
+        time.sleep(5)
+
+def _countdown_monitor(seconds, app_ref, lbl_ref):
+    start = time.time()
+    while not _cd_stop.is_set():
+        remaining = max(0, seconds - (time.time() - start))
+        m, s = divmod(int(remaining), 60)
+        disp = "⏱  Dead Man’s Switch: {:02d}:{:02d} remaining".format(m, s)
+        col  = "#f7630c" if remaining < 60 else "#ffb900"
+        try:
+            app_ref.after(0, lambda d=disp, c=col: lbl_ref.config(text=d, fg=c))
+        except Exception:
+            pass
+        if remaining <= 0:
+            _fire_auto_wipe("Dead man's switch: countdown expired", app_ref)
+            break
+        time.sleep(1)
+
 ALL_ITEMS = [
     # === LOW SENSITIVITY (Items 1-60) ===
     ("LOW","temp_win","Windows Temp Files","Cached junk in C:\\Windows\\Temp",lambda: _clean(r"C:\Windows\Temp\*")),
@@ -703,27 +783,27 @@ ALL_ITEMS = [
 
     # === ITEM 251 — LIVE RAM SANITIZATION ===
     ("HIGH","ram_wipe","Live RAM Overwrite (Free Pages)",
-     "Overwrites free RAM pages with random bytes + zeros. Trims working set, zeros pagefile on shutdown, disables hibernation. Kernel-locked pages cannot be touched from userspace.",
+     "Overwrites free RAM pages with random bytes + zeros. Zeros pagefile on shutdown, disables hibernation.",
      lambda: _wipe_ram()),
 
     # === ITEM 252 — BITLOCKER HEADER DESTRUCTION ===
     ("HIGH","bitlocker_header","BitLocker Volume Header Destruction",
-     "Destroys BitLocker VMK headers on all detected encrypted volumes. Without the header the ciphertext is permanently unrecoverable — no password or recovery key can ever unlock it. NIST 800-88 Cryptographic Erase.",
+     "Destroys BitLocker VMK headers on all encrypted volumes. Ciphertext becomes permanently unrecoverable. NIST 800-88 Cryptographic Erase.",
      lambda: _destroy_bitlocker_headers()),
 
     # === ITEM 253 — VERACRYPT CONTAINER NUKE ===
     ("HIGH","veracrypt_nuke","VeraCrypt Container Header Nuke",
-     "Overwrites primary and backup headers of all VeraCrypt containers (.vc/.hc) found on the system. Container becomes indistinguishable from random data — permanently inaccessible without breaking AES-XTS.",
+     "Overwrites primary and backup headers of all VeraCrypt containers (.vc/.hc). Container becomes indistinguishable from random data.",
      lambda: _nuke_veracrypt_containers()),
 
     # === ITEM 254 — EFS KEY MATERIAL WIPE ===
     ("HIGH","efs_keys","EFS Encrypted File System Key Wipe",
-     "Wipes RSA private keys and DPAPI master keys used by Windows EFS. All EFS-encrypted files on disk become permanently unreadable — even with valid Windows login credentials. WARNING: If you have EFS-encrypted files, they will be permanently inaccessible after this wipe. This cannot be undone.",
+     "Wipes RSA private keys and DPAPI master keys used by Windows EFS. EFS-encrypted files become permanently unreadable. WARNING: Cannot be undone.",
      lambda: _wipe_efs_keys()),
 
     # === ITEM 255 — WINDOWS HELLO / NGC KEY STORE ===
     ("HIGH","hello_ngc","Windows Hello & NGC Biometric Key Store",
-     "Destroys the NGC folder holding Windows Hello PIN, fingerprint and facial recognition key material. Prevents recovery of Hello credentials from the filesystem. PIN/biometrics must be re-enrolled after reboot.",
+     "Destroys NGC folder holding Windows Hello PIN, fingerprint and face recognition key material. PIN/biometrics must be re-enrolled after reboot.",
      lambda: _wipe_hello_ngc()),
 ]
 
@@ -813,7 +893,7 @@ class App(tk.Tk):
         except Exception:
             pass
 
-        self.title("REDACT 3.2")
+        self.title("REDACT 3.3.0")
         
         rect = RECT()
         ctypes.windll.user32.SystemParametersInfoW(48, 0, ctypes.byref(rect), 0)
@@ -826,6 +906,15 @@ class App(tk.Tk):
         self.vars = {iid: tk.BooleanVar(value=False) for (_,iid,*_) in ALL_ITEMS}
         self.tier_vars = {"LOW": tk.BooleanVar(), "MEDIUM": tk.BooleanVar(), "HIGH": tk.BooleanVar()}
         self._wipe_mode = "single"
+        self._trig_usb_var       = tk.BooleanVar(value=False)
+        self._trig_login_var     = tk.BooleanVar(value=False)
+        self._trig_countdown_var = tk.BooleanVar(value=False)
+        self._trig_login_thresh  = tk.StringVar(value="5")
+        self._trig_cd_sec        = tk.StringVar(value="300")
+        self._usb_baseline       = set()
+        self._trigger_threads    = []
+        self._cd_label           = None
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
         
         self._build_fluent_ui()
         self._update_selection_metrics()
@@ -838,8 +927,8 @@ class App(tk.Tk):
         text_header_f = tk.Frame(header_f, bg=W11_BG)
         text_header_f.pack(side="left", anchor="w")
         
-        tk.Label(text_header_f, text="REDACT 3.2", font=FONT_FL_HEADER, fg=W11_TEXT_MAIN, bg=W11_BG).pack(anchor="w")
-        tk.Label(text_header_f, text="Forensic Privacy Eraser & Advanced System Artifact Sanitization Suite · 255 System Items Active", font=FONT_FL_SUB, fg=W11_TEXT_MUTED, bg=W11_BG).pack(anchor="w", pady=(2, 0))
+        tk.Label(text_header_f, text="REDACT 3.3.0", font=FONT_FL_HEADER, fg=W11_TEXT_MAIN, bg=W11_BG).pack(anchor="w")
+        tk.Label(text_header_f, text="Windows Anti-Forensics & Artifact Sanitization Suite  ·  255 Items  ·  Auto-Trigger Engine v3.3.0", font=FONT_FL_SUB, fg=W11_TEXT_MUTED, bg=W11_BG).pack(anchor="w", pady=(2, 0))
 
         self.btn_run = tk.Button(header_f, text="INITIALIZE PIPELINE CLEAN", font=("Segoe UI", 11, "bold"), fg="#ffffff", bg="#004578", activebackground="#0078d4", activeforeground="#ffffff", bd=1, relief="flat", padx=35, pady=14, cursor="hand2", command=self._verify_intent)
         self.btn_run.pack(side="right", anchor="e", padx=(0, 5))
@@ -859,16 +948,60 @@ class App(tk.Tk):
         self.pbar = ttk.Progressbar(self.monitor_panel, orient="horizontal", mode="determinate")
         self.pbar.pack(side="right", fill="x", expand=True, padx=(10, 0))
 
-        # Mode Selector
+        # Mode Selector — left: wipe modes, right: auto-trigger
         algo_f = tk.LabelFrame(self, text=" Sanitization Standard Architecture ", font=FONT_FL_BOLD, fg=W11_TEXT_MAIN, bg=W11_CARD, bd=1, relief="solid", padx=15, pady=12)
         algo_f.pack(fill="x", padx=25, pady=5)
-        
+
+        # Left column — wipe mode radio buttons
+        algo_left = tk.Frame(algo_f, bg=W11_CARD)
+        algo_left.pack(side="left", fill="both", expand=True, anchor="n")
+
         self.mode_var = tk.StringVar(value="single")
         for key, (label, color, desc) in WIPE_MODES.items():
-            r_frame = tk.Frame(algo_f, bg=W11_CARD)
+            r_frame = tk.Frame(algo_left, bg=W11_CARD)
             r_frame.pack(fill="x", pady=2)
             rb = tk.Radiobutton(r_frame, text=f"{label}  —  {desc}", variable=self.mode_var, value=key, font=FONT_FL_MAIN, fg=W11_TEXT_MAIN, bg=W11_CARD, selectcolor=W11_SURFACE, activebackground=W11_CARD, activeforeground=W11_TEXT_MAIN, command=self._on_mode_switch)
             rb.pack(side="left")
+
+        # Divider
+        ttk.Separator(algo_f, orient="vertical").pack(side="left", fill="y", padx=20)
+
+        # Right column — Auto-Trigger Engine
+        trig_f = tk.Frame(algo_f, bg=W11_CARD)
+        trig_f.pack(side="left", fill="both", anchor="n")
+
+        tk.Label(trig_f, text="Auto-Trigger Engine", font=FONT_FL_BOLD, fg="#f7630c", bg=W11_CARD).pack(anchor="w", pady=(0, 8))
+
+        def _trig_row(label):
+            row = tk.Frame(trig_f, bg=W11_CARD)
+            row.pack(fill="x", pady=3)
+            return row
+
+        # USB Panic Trigger
+        usb_row = _trig_row("USB Panic Trigger")
+        tk.Label(usb_row, text="USB Panic Trigger", font=FONT_FL_BOLD, fg=W11_TEXT_MAIN, bg=W11_CARD, width=22, anchor="w").pack(side="left")
+        tk.Label(usb_row, text="Auto-wipe when any USB drive is removed", font=FONT_FL_SUB, fg=W11_TEXT_MUTED, bg=W11_CARD).pack(side="left", padx=(0, 10))
+        FluentSwitch(usb_row, variable=self._trig_usb_var, command=self._toggle_usb_trigger).pack(side="right")
+
+        # Login Failure Trigger
+        login_row = _trig_row("Login Failure Trigger")
+        tk.Label(login_row, text="Login Failure Trigger", font=FONT_FL_BOLD, fg=W11_TEXT_MAIN, bg=W11_CARD, width=22, anchor="w").pack(side="left")
+        tk.Label(login_row, text="After", font=FONT_FL_SUB, fg=W11_TEXT_MUTED, bg=W11_CARD).pack(side="left")
+        tk.Entry(login_row, textvariable=self._trig_login_thresh, width=4, bg=W11_SURFACE, fg=W11_TEXT_MAIN, insertbackground=W11_TEXT_MAIN, relief="flat", font=FONT_FL_MAIN).pack(side="left", padx=(4, 4))
+        tk.Label(login_row, text="failed logins", font=FONT_FL_SUB, fg=W11_TEXT_MUTED, bg=W11_CARD).pack(side="left", padx=(0, 10))
+        FluentSwitch(login_row, variable=self._trig_login_var, command=self._toggle_login_trigger).pack(side="right")
+
+        # Dead Man’s Switch
+        cd_row = _trig_row("Dead Man’s Switch")
+        tk.Label(cd_row, text="Dead Man’s Switch", font=FONT_FL_BOLD, fg=W11_TEXT_MAIN, bg=W11_CARD, width=22, anchor="w").pack(side="left")
+        tk.Label(cd_row, text="After", font=FONT_FL_SUB, fg=W11_TEXT_MUTED, bg=W11_CARD).pack(side="left")
+        tk.Entry(cd_row, textvariable=self._trig_cd_sec, width=6, bg=W11_SURFACE, fg=W11_TEXT_MAIN, insertbackground=W11_TEXT_MAIN, relief="flat", font=FONT_FL_MAIN).pack(side="left", padx=(4, 4))
+        tk.Label(cd_row, text="sec", font=FONT_FL_SUB, fg=W11_TEXT_MUTED, bg=W11_CARD).pack(side="left", padx=(0, 10))
+        FluentSwitch(cd_row, variable=self._trig_countdown_var, command=self._toggle_countdown_trigger).pack(side="right")
+
+        self._cd_label = tk.Label(trig_f, text="", font=FONT_FL_BOLD, fg="#ffb900", bg=W11_CARD)
+        self._cd_label.pack(anchor="w", pady=(4, 0))
+
 
         # Controls Row
         ctrl_f = tk.Frame(self, bg=W11_BG, padx=25, pady=10)
@@ -890,28 +1023,30 @@ class App(tk.Tk):
         self.lbl_metrics = tk.Label(ctrl_f, text="00 / 250 Targets Active", font=FONT_FL_BOLD, fg=W11_ACCENT, bg=W11_BG)
         self.lbl_metrics.pack(side="right")
 
-        # Scrollable Layout
+        # Scrollable artifact list
         list_container = tk.Frame(self, bg=W11_BG, padx=25, pady=5)
         list_container.pack(fill="both", expand=True)
-        
+
         canvas = tk.Canvas(list_container, bg=W11_BG, highlightthickness=0, bd=0)
         sb = ttk.Scrollbar(list_container, orient="vertical", command=canvas.yview)
         canvas.configure(yscrollcommand=sb.set)
         sb.pack(side="right", fill="y")
         canvas.pack(side="left", fill="both", expand=True)
-        
+
         self.inner_scroll = tk.Frame(canvas, bg=W11_BG)
-        canvas_win = canvas.create_window((0,0), window=self.inner_scroll, anchor="nw")
-        
+        canvas_win = canvas.create_window((0, 0), window=self.inner_scroll, anchor="nw")
+
         canvas.bind("<Configure>", lambda e: canvas.itemconfig(canvas_win, width=e.width))
         self.inner_scroll.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        
+
         active_tier = None
-        for (tier, iid, name, desc) in [(t,i,n,d) for (t,i,n,d,_) in ALL_ITEMS]:
+        for (tier, iid, name, desc) in [(t, i, n, d) for (t, i, n, d, _) in ALL_ITEMS]:
             if tier != active_tier:
                 active_tier = tier
                 self._build_tier_header(active_tier)
             self._build_item_card(tier, iid, name, desc)
+
+
 
     def _build_tier_header(self, tier):
         tf = tk.Frame(self.inner_scroll, bg=W11_SURFACE, padx=15, pady=6, bd=1, relief="solid")
@@ -982,6 +1117,91 @@ class App(tk.Tk):
         n = sum(1 for v in self.vars.values() if v.get())
         self.lbl_metrics.config(text=f"{n:03d} / 255 Targets Active")
 
+    def _stop_trigger(self, name):
+        # Set the event so the thread exits on its next tick.
+        # Never clear — next arm creates a fresh Event so old threads stay dead.
+        if name == "usb":
+            _usb_stop.set()
+        elif name == "login":
+            _login_stop.set()
+        elif name == "countdown":
+            _cd_stop.set()
+            if self._cd_label:
+                self._cd_label.config(text="")
+
+    def _stop_all_triggers(self):
+        _usb_stop.set()
+        _login_stop.set()
+        _cd_stop.set()
+        self._trigger_threads.clear()
+        if self._cd_label:
+            self._cd_label.config(text="")
+
+    def _toggle_usb_trigger(self):
+        if self._trig_usb_var.get():
+            self._usb_baseline = _get_removable_drives()
+            if not self._usb_baseline:
+                messagebox.showwarning("USB Trigger",
+                    "No removable USB drives detected. Insert a USB drive first.")
+                self._trig_usb_var.set(False)
+                return
+            # Fresh event each arm — old thread's event stays set, it cannot resurrect
+            global _usb_stop
+            _usb_stop = threading.Event()
+            drives_str = ", ".join(sorted(self._usb_baseline))
+            t = threading.Thread(target=_usb_trigger_monitor,
+                                 args=(self._usb_baseline.copy(), self), daemon=True)
+            t.start()
+            self._trigger_threads.append(t)
+            messagebox.showinfo("USB Trigger Armed", "Armed on drives: " + drives_str + ":\nRemove any to fire immediate HIGH-tier wipe.")
+        else:
+            self._stop_trigger("usb")
+
+    def _toggle_login_trigger(self):
+        if self._trig_login_var.get():
+            try:
+                threshold = int(self._trig_login_thresh.get())
+                assert threshold >= 1
+            except Exception:
+                messagebox.showerror("Login Trigger",
+                    "Enter a valid number of failed attempts (minimum 1).")
+                self._trig_login_var.set(False)
+                return
+            # Fresh event each arm
+            global _login_stop
+            _login_stop = threading.Event()
+            t = threading.Thread(target=_login_failure_monitor,
+                                 args=(threshold, self), daemon=True)
+            t.start()
+            self._trigger_threads.append(t)
+            messagebox.showinfo("Login Trigger Armed", "Monitoring Event ID 4625. Fires after " + str(threshold) + " failed attempt(s).")
+        else:
+            self._stop_trigger("login")
+
+    def _toggle_countdown_trigger(self):
+        if self._trig_countdown_var.get():
+            try:
+                seconds = int(self._trig_cd_sec.get())
+                assert seconds >= 10
+            except Exception:
+                messagebox.showerror("Dead Man’s Switch",
+                    "Enter a valid countdown (minimum 10 seconds).")
+                self._trig_countdown_var.set(False)
+                return
+            # Fresh event each arm — guarantees no stale thread survives re-arm
+            global _cd_stop
+            _cd_stop = threading.Event()
+            t = threading.Thread(target=_countdown_monitor,
+                                 args=(seconds, self, self._cd_label), daemon=True)
+            t.start()
+            self._trigger_threads.append(t)
+        else:
+            self._stop_trigger("countdown")
+
+    def _on_close(self):
+        self._stop_all_triggers()
+        self.destroy()
+
     def _verify_intent(self):
         selected = [(t, i, n, d, fn) for (t, i, n, d, fn) in ALL_ITEMS if self.vars[i].get()]
         if not selected:
@@ -1023,7 +1243,7 @@ class App(tk.Tk):
         self.lbl_realtime_erased.config(text=f"Space Freed: {final_size}")
         self._none()
         
-        messagebox.showinfo("REDACT Pipeline Complete", f"All operations finalized successfully.\n\nTotal System Files Shredded: {STATS.files}\nTotal Hardware Sectors Freed: {final_size}\nRegistry Keys Altered: {STATS.reg_keys}\n\nNotice: System hygiene preserved. Zero local or memory trace records have been compiled.")
+        messagebox.showinfo("REDACT 3.3.0 Pipeline Complete", f"All operations finalized successfully.\n\nTotal System Files Shredded: {STATS.files}\nTotal Hardware Sectors Freed: {final_size}\nRegistry Keys Altered: {STATS.reg_keys}\n\nNotice: System hygiene preserved. Zero local or memory trace records have been compiled.")
 
 if __name__ == "__main__":
     app = App()
