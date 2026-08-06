@@ -2,14 +2,14 @@
   <img src="logo.png" width="180"/>
 </p>
 
-<h1 align="center">REDACT 3.2.1</h1>
+<h1 align="center">REDACT 3.3.0</h1>
 
 <p align="center">
   <i>ERASE EVERYTHING. LEAVE NOTHING.</i>
 </p>
 
 <p align="center">
-  <b>255 targets · 3 tiers · 4 wipe standards · 10 browsers · Live RAM Wipe · Cryptographic Erasure · BitLocker Safety Gate · Windows 11</b>
+  <b>255 targets · 3 tiers · 4 wipe standards · 10 browsers · Live RAM Wipe · Cryptographic Erasure · Auto-Trigger Engine · BitLocker Safety Gate · Windows 11</b>
 </p>
 
 <p align="center">
@@ -47,7 +47,7 @@ Or run directly from source — see [Installation & Usage](#installation--usage)
 
 ## Screenshot
 
-![REDACT 3.2](screenshot.png)
+![REDACT 3.3.0](screenshot.png)
 
 ---
 
@@ -59,7 +59,7 @@ Or run directly from source — see [Installation & Usage](#installation--usage)
 - **Developers and power users** who understand what these artifacts contain and want them gone
 - **Anyone donating or selling a PC** who wants to ensure personal data doesn't travel with it
 
-> REDACT 3.2 is intended for use on machines you own or are authorised to manage. It is not intended for use in circumventing lawful investigations or any activity prohibited by law in your jurisdiction.
+> REDACT 3.3.0 is intended for use on machines you own or are authorised to manage. It is not intended for use in circumventing lawful investigations or any activity prohibited by law in your jurisdiction.
 
 ---
 
@@ -73,6 +73,7 @@ Or run directly from source — see [Installation & Usage](#installation--usage)
 - **EFS & Windows Hello key destruction** — RSA private keys, DPAPI master keys, and NGC biometric key store
 - **Registry cleaning** with direct `winreg` access and `reg.exe` fallback
 - **Windows Recall / CoreAI** database and screenshot store destruction
+- **Auto-Trigger Engine** — three independent background monitors that fire a HIGH-tier wipe automatically: USB panic trigger, login failure trigger, and dead man's switch countdown
 - **Real-time monitor** showing live file count, bytes freed, and progress
 - **Safe Selection preset** — one click enables everything except irreversible high-risk items
 - **No external dependencies** — pure Python standard library only
@@ -102,7 +103,7 @@ Safe ephemeral caches that Windows rebuilds automatically. Zero functional impac
 - Windows Error Reports, update leftovers, Delivery Optimization cache
 - Diagnostic logs, telemetry staging, speech model caches, and more
 
-### 🟡 Tier 2 — Medium Sensitivity (70 items)
+### 🟡 Tier 2 — Medium Sensitivity (69 items)
 Application history, browser caches, and usage records. May reset UI preferences in affected apps.
 
 - File Explorer recent files, jump lists, Run dialog history, clipboard history
@@ -111,7 +112,7 @@ Application history, browser caches, and usage records. May reset UI preferences
 - App histories for Teams, Discord, Zoom, Steam, Spotify, VS Code, Blender, Unity, and more
 - Developer tool caches: npm, pip, Go build cache, Android Studio, Sublime Text
 
-### 🔴 Tier 3 — High Sensitivity (125 items)
+### 🔴 Tier 3 — High Sensitivity (126 items)
 Primary forensic artifacts, OS-level databases, live memory, and cryptographic key material. Review each item before selecting.
 
 | Target | What it destroys |
@@ -139,9 +140,37 @@ Primary forensic artifacts, OS-level databases, live memory, and cryptographic k
 
 ---
 
+## Auto-Trigger Engine — How It Works
+
+REDACT 3.3.0 introduces three independent background monitors. Each runs on its own thread with its own stop event — activating or cancelling one has no effect on the others. All three can run simultaneously.
+
+### USB Panic Trigger
+
+Arm it with a USB drive present. REDACT locks the set of currently connected removable drives as a baseline and polls `GetLogicalDrives` + `GetDriveTypeW` every second. The moment any drive in the baseline disappears — wipe fires immediately, with no confirmation dialog.
+
+**Use case:** a dedicated USB kept plugged in at all times. Pull it on the way out the door. The wipe is already running before anyone reaches the keyboard.
+
+### Login Failure Trigger
+
+Configurable threshold (default: 5 attempts). REDACT queries the Windows Security Event Log for Event ID 4625 (failed logon) every 5 seconds, tracking the delta from a baseline captured at arming time. Covers wrong passwords, wrong PIN, failed Windows Hello, failed RDP, and failed network logon attempts.
+
+**Use case:** a seized machine where an attacker is brute-forcing the lock screen. After the configured number of failures, REDACT fires silently in the background.
+
+### Dead Man's Switch
+
+Configurable countdown in seconds (default: 300). A live timer is shown in the trigger panel, turning red below 60 seconds. When the countdown reaches zero — wipe fires. Toggle off at any time to cancel cleanly.
+
+**Use case:** a machine taken into a room you cannot follow. Arm the switch for the expected window. If it isn't back in your hands before it expires — wiped.
+
+### What the auto-wipe does
+
+All three triggers execute the same pipeline: **1-Pass** wipe standard across all **126 HIGH-sensitivity items** — silently, with no UI interaction required. A notification is shown on completion if the app window is still accessible.
+
+---
+
 ## Live RAM Overwrite — How It Works
 
-REDACT 3.2 is the only open-source Windows GUI tool with built-in live RAM sanitization. When selected, it:
+REDACT 3.3.0 is the only open-source Windows GUI tool with built-in live RAM sanitization. When selected, it:
 
 1. Queries available physical RAM via `GlobalMemoryStatusEx`
 2. Forces Python garbage collection to maximise free page frames
@@ -159,7 +188,7 @@ REDACT 3.2 is the only open-source Windows GUI tool with built-in live RAM sanit
 
 ## Cryptographic Erasure — How It Works
 
-Rather than decrypting volumes (which is slow, requires the key, and leaves plaintext on disk temporarily), REDACT 3.2 uses **cryptographic erasure** — destroying only the key material that makes encrypted data readable. This is faster, more secure, and recognised by NIST 800-88 as a valid sanitization method.
+Rather than decrypting volumes (which is slow, requires the key, and leaves plaintext on disk temporarily), REDACT 3.3.0 uses **cryptographic erasure** — destroying only the key material that makes encrypted data readable. This is faster, more secure, and recognised by NIST 800-88 as a valid sanitization method.
 
 | Item | Method | Effect |
 |---|---|---|
@@ -176,16 +205,16 @@ Rather than decrypting volumes (which is slow, requires the key, and leaves plai
 
 ```bash
 # Run directly
-python REDACT.py
+python REDACT330.py
 ```
 
-REDACT 3.2 will auto-elevate via UAC if the current session lacks Administrator rights.
+REDACT 3.3.0 will auto-elevate via UAC if the current session lacks Administrator rights.
 
 **To build a standalone executable:**
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --uac-admin --icon=logo.ico --name="REDACT 3.2.1" "REDACT 3.2.1.py"
+pyinstaller --onefile --windowed --uac-admin --icon=logo.ico --name="REDACT 3.3.0" "REDACT330.py"
 ```
 
 No pip packages are required to run the script itself — only PyInstaller is needed if you want to compile to `.exe`.
@@ -194,8 +223,9 @@ No pip packages are required to run the script itself — only PyInstaller is ne
 
 ## Why REDACT vs Other Tools
 
-| Feature | REDACT 3.2 | CCleaner | BleachBit | PrivaZer |
+| Feature | REDACT 3.3.0 | CCleaner | BleachBit | PrivaZer |
 |---|---|---|---|---|
+| **Auto-Trigger Engine** | ✅ USB / Login / Countdown | ❌ | ❌ | ❌ |
 | **Open source** | ✅ GPL v3 | ❌ Proprietary | ✅ GPL | ❌ Proprietary |
 | **Forensic artifact targets** | ✅ 255 (AmCache, BAM, ShimCache, SRUM…) | ❌ Basic only | ⚠️ Limited | ⚠️ Partial |
 | **Live RAM overwrite** | ✅ | ❌ | ❌ | ❌ |
@@ -211,7 +241,7 @@ No pip packages are required to run the script itself — only PyInstaller is ne
 | **No telemetry / phoning home** | ✅ | ❌ (Free tier) | ✅ | ❌ |
 | **No external dependencies** | ✅ | N/A | N/A | N/A |
 
-REDACT 3.2 is the only open-source Windows privacy tool built specifically to defeat forensic analysis at every layer — OS artifacts, live RAM, encrypted volume key material, and biometric credentials.
+REDACT 3.3.0 is the only open-source Windows privacy tool built specifically to defeat forensic analysis at every layer — OS artifacts, live RAM, encrypted volume key material, biometric credentials, and now automated trigger-based execution.
 
 ---
 
@@ -230,17 +260,27 @@ REDACT 3.2 is the only open-source Windows privacy tool built specifically to de
 
 ## Companion Tool — AAD-50
 
-REDACT 3.2 handles **OS-level** privacy cleaning — files, caches, registry traces, browser history, live RAM, and cryptographic key material.
+REDACT 3.3.0 handles **OS-level** privacy cleaning — files, caches, registry traces, browser history, live RAM, cryptographic key material, and automated trigger-based wiping.
 
 For **firmware-level NVMe drive sanitization** — full physical destruction of all NAND cells including over-provisioned zones, FTL mapping tables, and hardware-level cryptographic keys — see the companion tool:
 
 🔒 **[AAD-50 — Abeselom ASIC-Direct 50](https://github.com/yonasabeselom/aad50)** — 50-cycle, hardware-confirmed NVMe sanitization with SHA-256 audit chain and PDF Certificate of Destruction. Adopted into linux-nvme/nvme-cli master in 14 days. Confirmed by NVM Express Administration as recommended best practice. Compliant with IEEE 2883.1-2025.
 
-> Together, **REDACT 3.2.1 + AAD-50** cover the complete forensic stack — from Windows registry and live RAM down to the raw NAND cells. No other open-source toolchain does both.
+> Together, **REDACT 3.3.0 + AAD-50** cover the complete forensic stack — from Windows registry and live RAM down to the raw NAND cells. No other open-source toolchain does both.
 
 ---
 
 ## Changelog
+
+### v3.3.0 — August 2026
+
+- **Auto-Trigger Engine:** Three independent background monitors that fire a HIGH-tier wipe automatically without user interaction.
+  - **USB Panic Trigger:** Arms on currently connected removable drives. Fires the moment any drive in the baseline is removed.
+  - **Login Failure Trigger:** Monitors Windows Security Event Log (Event ID 4625). Fires after a configurable number of failed logon attempts (default: 5). Covers password, PIN, Windows Hello, RDP, and network logon failures.
+  - **Dead Man's Switch:** Configurable countdown timer (default: 300 s). Live display in trigger panel. Fires at zero; cancels cleanly at any time.
+- **Multi-trigger queue:** Each trigger has its own `threading.Event` stop signal. All three can run simultaneously. Stopping one does not affect the others.
+- **`_stop_trigger(name)` / `_stop_all_triggers()`:** Granular stop methods. `_stop_all_triggers()` called automatically on window close via `WM_DELETE_WINDOW`.
+- **Auto-wipe pipeline:** All triggers execute 1-Pass wipe across all 126 HIGH-sensitivity items silently.
 
 ### v3.2.1 — August 2026
 
@@ -284,7 +324,7 @@ Bug reports, target suggestions, and pull requests are welcome.
 
 ## ⚠️ Disclaimer
 
-REDACT 3.2.1 **permanently destroys data**. Wiped files cannot be recovered. Registry keys deleted by REDACT are gone. Volume Shadow Copies, once deleted, remove your ability to restore previous file versions. BitLocker and VeraCrypt header destruction renders encrypted volumes permanently inaccessible — there is no recovery path.
+REDACT 3.3.0 **permanently destroys data**. Wiped files cannot be recovered. Registry keys deleted by REDACT are gone. Volume Shadow Copies, once deleted, remove your ability to restore previous file versions. BitLocker and VeraCrypt header destruction renders encrypted volumes permanently inaccessible — there is no recovery path.
 
 Always ensure you have backups of anything you want to keep before running this tool. The author accepts no liability for data loss, system instability, or any other consequence arising from its use.
 
