@@ -83,7 +83,7 @@ Or run directly from source — see [Installation & Usage](#installation--usage)
 
 ## Privacy Architecture
 
-REDACT 3.2 includes three internal hardening measures designed to prevent the tool's own execution from leaving a recoverable trace:
+REDACT 3.3.0 includes three internal hardening measures designed to prevent the tool's own execution from leaving a recoverable trace:
 
 - **Transient Execution Splitting** — On launch, if the executable name contains "REDACT", the process clones itself to a randomised temporary name and re-executes from there, reducing its visibility in process history logs (Prefetch, BAM).
 - **NTFS File Cliff Masking** — After each wipe batch, the engine writes and immediately deletes a cluster of random dummy files, smoothing the deletion spike in NTFS metadata that would otherwise stand out in a forensic timeline.
