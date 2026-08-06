@@ -205,7 +205,7 @@ Rather than decrypting volumes (which is slow, requires the key, and leaves plai
 
 ```bash
 # Run directly
-python REDACT330.py
+python REDACT.py
 ```
 
 REDACT 3.3.0 will auto-elevate via UAC if the current session lacks Administrator rights.
@@ -214,7 +214,7 @@ REDACT 3.3.0 will auto-elevate via UAC if the current session lacks Administrato
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --uac-admin --icon=logo.ico --name="REDACT 3.3.0" "REDACT330.py"
+pyinstaller --onefile --windowed --uac-admin --icon=logo.ico --name="REDACT 3.3.0" "REDACT.py"
 ```
 
 No pip packages are required to run the script itself — only PyInstaller is needed if you want to compile to `.exe`.
