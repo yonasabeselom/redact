@@ -270,6 +270,28 @@ For **firmware-level NVMe drive sanitization** — full physical destruction of 
 
 ---
 
+## Companion Tool — TRACE
+
+Before you clean, know exactly what you're cleaning. TRACE is a Windows forensic artifact scanner that detects, scores, and reports on **100 high-value forensic artifacts** across your system — giving you a precise exposure score before you run REDACT.
+
+🔍 **[TRACE 1.0 — Windows Forensic Exposure Scanner](https://github.com/yonasabeselom/trace)** — scans 100 artifacts across HIGH / MEDIUM / LOW risk tiers, computes a weighted exposure score out of 100, and exports a full PDF report to Desktop.
+
+📦 **[Download on SourceForge](https://sourceforge.net/projects/trace/)**
+
+- **100 forensic artifacts** — registry hives, prefetch, USB history, LNK files, shellbags, jump lists, SRUM, browser history, Windows Event Logs, and more
+- **Weighted exposure score 0–100** — HIGH artifacts worth 3 pts, MEDIUM 2 pts, LOW 1 pt
+- **Real-time colour-coded terminal output** — found vs not found per artifact
+- **PDF report** saved to Desktop — cover page, full results table, tier breakdown
+- **Auto-elevates to Administrator** — no manual UAC steps needed
+- **Zero install, fully offline** — no internet connection, no telemetry
+
+> **TRACE** shows you exactly what forensic evidence exists on your machine.  
+> **REDACT 3.3.0** cleans it at the OS level — files, registry, RAM, credentials, browser history.  
+> **AAD-50** erases it at the firmware level down to the raw NAND cells.  
+> Use all three for complete full-stack coverage — from artifact discovery to physical erasure.
+
+---
+
 ## Changelog
 
 ### v3.3.0 — August 2026
