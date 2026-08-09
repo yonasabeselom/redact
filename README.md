@@ -276,8 +276,6 @@ Before you clean, know exactly what you're cleaning. TRACE is a Windows forensic
 
 🔍 **[TRACE 1.0 — Windows Forensic Exposure Scanner](https://github.com/yonasabeselom/trace)** — scans 100 artifacts across HIGH / MEDIUM / LOW risk tiers, computes a weighted exposure score out of 100, and exports a full PDF report to Desktop.
 
-📦 **[Download on SourceForge](https://sourceforge.net/projects/trace/)**
-
 - **100 forensic artifacts** — registry hives, prefetch, USB history, LNK files, shellbags, jump lists, SRUM, browser history, Windows Event Logs, and more
 - **Weighted exposure score 0–100** — HIGH artifacts worth 3 pts, MEDIUM 2 pts, LOW 1 pt
 - **Real-time colour-coded terminal output** — found vs not found per artifact
