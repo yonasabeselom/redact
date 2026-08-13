@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" width="180"/>
+  <img src="https://raw.githubusercontent.com/yonasabeselom/redact/main/logo.png" width="180"/>
 </p>
 
 <h1 align="center">REDACT 3.3.0</h1>
@@ -55,7 +55,7 @@ Or run directly from source — see [Installation & Usage](#installation--usage)
 
 ## Screenshot
 
-![REDACT 3.3.0](screenshot.png)
+![REDACT 3.3.0](https://raw.githubusercontent.com/yonasabeselom/redact/main/screenshot.png)
 
 ---
 
