@@ -5,14 +5,6 @@
 <h1 align="center">REDACT 3.3.0</h1>
 
 <p align="center">
-  <a href="https://ko-fi.com/yonasabeselom">
-    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support on Ko-fi"/>
-  </a>
-</p>
-
-> ☕ If REDACT helped you, [buy me a coffee](https://ko-fi.com/yonasabeselom) to keep development going.
-
-<p align="center">
   <i>ERASE EVERYTHING. LEAVE NOTHING.</i>
 </p>
 
