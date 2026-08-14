@@ -35,6 +35,11 @@
   <b>⭐ If REDACT is useful to you, please star this repository — it helps other privacy-conscious users find it.</b>
 </p>
 
+<p align="center">
+  <br>
+  <a href="https://ko-fi.com/yonasabeselom"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="ko-fi"/></a>
+</p>
+
 ---
 
 ## Download
